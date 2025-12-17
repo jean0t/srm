@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# srm is a tool thought to me used for privacy
+# you decide if you want to keep in your system for recover
+# later by simply using rm or making it go away forever with srm
+# Copyleft license GPL-3 made in 17 of December, 2025
+# Creator: Jean0t (Joao Mauricio)
+
+
+HELP_MESSAGE="srm [options] FILE
+
+Safely remove files by overwritting them with random data.
+The options available here are the same as from the command *rm*."
+
+case "$1" in
+	--help|-h|help|"")
+			echo -e "${HELP_MESSAGE}"
+			exit 0
+		;;
+
+	--version|-v)
+			echo -e "srm (safe remove) version 1.0\nLicense GPL-3"
+			exit 0
+		;;
+esac
+
+
+if [[ $# -gt 1 ]]; then
+	shred -n 10 "${!#}" && rm "${@:1:$#-1}" "${!#}"
+else
+	shred -n 10 "${1}" && rm "${1}"
+fi
