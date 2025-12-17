@@ -52,7 +52,7 @@ You can use it directly from the terminal with the same options you would normal
 Example:
 
 ```sh
-srm -v important_file.txt
+srm -f important_file.txt
 ```
 
 This design allows you to replace `rm` with `srm` in your workflow with minimal friction.
@@ -63,7 +63,10 @@ This design allows you to replace `rm` with `srm` in your workflow with minimal 
 
 * **Directory removal is not supported yet**
 
-Support for directories is planned for the next update.
+The intention of the tool is to remove files, the point of directories will need to be used with shell globs like:  
+`srm some_directory/**/*`  
+
+*obs: better support in the future is to be expected.*
 
 ---
 
