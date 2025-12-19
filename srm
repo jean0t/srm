@@ -16,9 +16,12 @@ set -eu
 
 #================================================================
 # VARIABLES
-readonly AUTHOR='Joao Mauricio (jean0t)'
-readonly VERSION='1.0.0'
+readonly AUTHOR='Joao Mauricio (jean0t/noether)'
+readonly VERSION='1.0.2'
 
+# flags are initialized false
+RECURSIVE=0
+FORCE=0
 #================================================================
 # INFO
 show_version() {
@@ -62,6 +65,16 @@ while getopts ":vhfr" opts; do
 	v)
 	    show_version
 	    exit 0
+	    ;;
+
+	# currently those two do nothing
+	# but they will be important in future updates
+	f)
+	    FORCE=1
+	    ;;
+
+	r)
+	    RECURSIVE=1
 	    ;;
 
 	*)
