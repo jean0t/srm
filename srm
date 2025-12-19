@@ -1,32 +1,80 @@
 #!/usr/bin/env bash
+#
+# srm - Secure Remove
+# Safely removes files by overwriting them with random data before deletion
+#
+# Copyright (C) 2025 João Maurício (Jean0t)
+# Licensed under GPL-3.0-or-later
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-# srm is a tool thought to me used for privacy
-# you decide if you want to keep in your system for recover
-# later by simply using rm or making it go away forever with srm
-# Copyleft license GPL-3 made in 17 of December, 2025
-# Creator: Jean0t (Joao Mauricio)
+set -eu
 
 
-HELP_MESSAGE="srm [options] FILE
+#================================================================
+# VARIABLES
+readonly AUTHOR='Joao Mauricio (jean0t)'
+readonly VERSION='1.0.0'
 
-Safely remove files by overwritting them with random data.
-The options available here are the same as from the command *rm*."
+#================================================================
+# INFO
+show_version() {
+    echo -e \
+	 "srm (Secure Remove) ${VERSION}
+Copyright (C) 2025 ${AUTHOR}
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 
-case "$1" in
-	--help|-h|help|"")
-			echo -e "${HELP_MESSAGE}"
-			exit 0
-		;;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
 
-	--version|-v)
-			echo -e "srm (safe remove) version 1.0\nLicense GPL-3"
-			exit 0
-		;;
-esac
+Written by ${AUTHOR}"
+}
+
+show_help() {
+    echo -e \
+	 "Usage: srm [OPTIONS] FILE...
+
+Securely remove files by overwriting them with random data before deletion.
+
+OPTIONS:
+    -h          Display this help message and exit
+    -v          Display version information and exit
+    -f          Ignore nonexistent files, never prompt
+    -r          Remove directories and their contents recursively
+
+OBS:
+\t-f and -r aren't supported yet"
+}
+
+
+#================================================================
+# Main
+while getopts ":vhfr" opts; do
+    case "$opts" in
+	-h)
+	    show_help
+	    exit 0
+	    ;;
+
+	-v)
+	    show_version
+	    exit 0
+	    ;;
+
+	*)
+	    show_help
+	    exit 1
+	    ;;
+    esac
+done
+shift $((OPTIND - 1))
 
 
 if [[ $# -gt 1 ]]; then
-	shred -z -n 10 "${!#}" && rm "${@:1:$#-1}" "${!#}"
+    shred -n 10 "${!#}" && rm "${@:1:$#-1}" "${!#}"
 else
-	shred -z -n 10 "${1}" && rm "${1}"
+    shred -n 10 "${1}" && rm "${1}"
 fi
