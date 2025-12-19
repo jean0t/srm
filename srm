@@ -11,17 +11,38 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-set -eu
+set -u
 
 
 #================================================================
 # VARIABLES
 readonly AUTHOR='Joao Mauricio (jean0t/noether)'
-readonly VERSION='1.0.2'
+readonly VERSION='2.0.0'
+
+
+# operational constants
+SHRED_OVERWRITES=10
+SHRED_OPTS=(-z)
+RM_OPTS=()
 
 # flags are initialized false
 RECURSIVE=0
+VERBOSE=0
 FORCE=0
+
+#================================================================
+# VERIFICATIONS
+verify_dependencies() {
+    if ! command -v shred 2>/dev/null >&2; then
+	echo 'shred does not exists' && exit 1
+    fi
+
+    if ! command -v rm 2>/dev/null >&2; then
+	echo 'rm does not exists' && exit 1
+    fi
+}
+
+
 #================================================================
 # INFO
 show_version() {
@@ -45,49 +66,96 @@ Securely remove files by overwriting them with random data before deletion.
 OPTIONS:
     -h          Display this help message and exit
     -v          Display version information and exit
-    -f          Ignore nonexistent files, never prompt
-    -r          Remove directories and their contents recursively
-
-OBS:
-\t-f and -r aren't supported yet"
+    -V		Display verbose output
+    -f          Ignore nonexistent files, never prompt"
 }
 
 
 #================================================================
+# OPERATIONS
+
+secure_remove_file() {
+    local file="$1"
+
+    if [[ ! -e "$file" && ${FORCE} -eq 0 ]]; then
+	echo "File doesn't exists"
+	return 1
+	
+    elif [[ -d "$file" ]]; then
+	echo "Appointed data isn't a file but a directory"
+	echo "Tip: use the command 'find' with srm or shell glob like /test/**/* to select files to deletion in a directory"
+	return 1
+    fi
+
+    if shred ${SHRED_OPTS[@]} -n ${SHRED_OVERWRITES} "$file" 2>/dev/null; then
+	[[ ${VERBOSE} -eq 1 ]] && echo "${file} was overwritten ${SHRED_OVERWRITES} times"
+
+    elif [[ ${FORCE} -eq 0 ]]; then
+        echo "Failed to overwrite"
+	return 1
+    fi
+
+    if rm ${RM_OPTS} "$file" 2>/dev/null >&2; then
+	[[ ${VERBOSE} -eq 1 ]] && echo "${file} was removed successfully"
+	
+    else
+	echo "Failed to remove file"
+	return 1
+    fi
+}
+
+#================================================================
 # Main
-while getopts ":vhfr" opts; do
-    case "$opts" in
-	h)
-	    show_help
-	    exit 0
-	    ;;
 
-	v)
-	    show_version
-	    exit 0
-	    ;;
+main() {
+    verify_dependencies
 
-	# currently those two do nothing
-	# but they will be important in future updates
-	f)
-	    FORCE=1
-	    ;;
+    while getopts ":vVhfr" opts; do
+	case "$opts" in
+	    h)
+		show_help
+		exit 0
+		;;
 
-	r)
-	    RECURSIVE=1
-	    ;;
+	    v)
+		show_version
+		exit 0
+		;;
 
-	*)
-	    show_help
+	    V)
+		VERBOSE=1
+		RM_OPTS+=(-v)
+		;;
+	    
+	    f)
+		FORCE=1
+		RM_OPTS+=(-f)
+		SHRED_OPTS+=(-f)
+		;;
+
+	    *)
+		show_help
+		exit 1
+		;;
+	esac
+    done
+    shift $((OPTIND - 1))
+
+
+    if [[ $# -eq 0 ]]; then
+	echo 'No file was specified'
+	echo "Try: 'srm -h' for more information"
+	exit 1
+    fi
+
+
+    for file in "$@"; do
+	if ! secure_remove_file "${file}"; then
+	    echo "Operation aborted: failed to operate with ${file}"
 	    exit 1
-	    ;;
-    esac
-done
-shift $((OPTIND - 1))
+	fi
+    done
+}
 
-
-if [[ $# -gt 1 ]]; then
-    shred -n 10 "${!#}" && rm "${@:1:$#-1}" "${!#}"
-else
-    shred -n 10 "${1}" && rm "${1}"
-fi
+# Entrypoint
+main "$@"
