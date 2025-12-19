@@ -3,7 +3,7 @@
 # srm - Secure Remove
 # Safely removes files by overwriting them with random data before deletion
 #
-# Copyright (C) 2025 João Maurício (Jean0t)
+# Copyright (C) 2025 João Maurício (Jean0t/noether)
 # Licensed under GPL-3.0-or-later
 # 
 # This program is free software: you can redistribute it and/or modify
