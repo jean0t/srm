@@ -17,7 +17,7 @@ set -u
 #================================================================
 # VARIABLES
 readonly AUTHOR='Joao Mauricio (jean0t/noether)'
-readonly VERSION='2.0.0'
+readonly VERSION='2.0.1'
 
 
 # operational constants
@@ -95,9 +95,9 @@ secure_remove_file() {
 	return 1
     fi
 
-    if rm ${RM_OPTS} "$file" 2>/dev/null >&2; then
+    if rm ${RM_OPTS[@]} "$file" 2>/dev/null >&2; then
 	[[ ${VERBOSE} -eq 1 ]] && echo "${file} was removed successfully"
-	
+	return 0
     else
 	echo "Failed to remove file"
 	return 1
