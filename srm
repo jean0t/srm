@@ -17,18 +17,20 @@ set -u
 #================================================================
 # VARIABLES
 readonly AUTHOR='Joao Mauricio (jean0t/noether)'
-readonly VERSION='2.0.1'
+readonly VERSION='2.0.2'
 
 
 # operational constants
 SHRED_OVERWRITES=10
-SHRED_OPTS=(-z)
-RM_OPTS=()
+declare -a SHRED_OPTS
+declare -a RM_OPTS
+SHRED_OPTS+=(-z)
 
 # flags are initialized false
 RECURSIVE=0
 VERBOSE=0
 FORCE=0
+DRY_RUN=0
 
 #================================================================
 # VERIFICATIONS
@@ -67,7 +69,8 @@ OPTIONS:
     -h          Display this help message and exit
     -v          Display version information and exit
     -V		Display verbose output
-    -f          Ignore nonexistent files, never prompt"
+    -f          Ignore nonexistent files, never prompt
+    -n		Dry Run, doesn't operates but shows which files it would operate on"
 }
 
 
@@ -77,17 +80,30 @@ OPTIONS:
 secure_remove_file() {
     local file="$1"
 
+    #====== Start file verifications
     if [[ ! -e "$file" && ${FORCE} -eq 0 ]]; then
 	echo "File doesn't exists"
 	return 1
-	
-    elif [[ -d "$file" ]]; then
+    fi
+    
+    if [[ -d "$file" ]]; then
 	echo "Appointed data isn't a file but a directory"
 	echo "Tip: use the command 'find' with srm or shell glob like /test/**/* to select files to deletion in a directory"
 	return 1
     fi
 
-    if shred ${SHRED_OPTS[@]} -n ${SHRED_OVERWRITES} "$file" 2>/dev/null; then
+    if [[ -L "${file}" ]]; then
+	echo "Won't operate in a symbolic link: ${file}"
+	return 1
+    fi
+    #====== End file verifications
+
+    if [[ ${DRY_RUN:-0} -eq 1 ]]; then
+	echo "Would operate in the file: ${file}"
+	return 0
+    fi
+    
+    if shred ${SHRED_OPTS[*]} -n ${SHRED_OVERWRITES} "$file" 2>/dev/null; then
 	[[ ${VERBOSE} -eq 1 ]] && echo "${file} was overwritten ${SHRED_OVERWRITES} times"
 
     elif [[ ${FORCE} -eq 0 ]]; then
@@ -95,13 +111,15 @@ secure_remove_file() {
 	return 1
     fi
 
-    if rm ${RM_OPTS[@]} "$file" 2>/dev/null >&2; then
+    if rm ${RM_OPTS[*]} "$file" 2>/dev/null; then
 	[[ ${VERBOSE} -eq 1 ]] && echo "${file} was removed successfully"
-	return 0
+
     else
 	echo "Failed to remove file"
 	return 1
     fi
+
+    return 0
 }
 
 #================================================================
@@ -110,7 +128,7 @@ secure_remove_file() {
 main() {
     verify_dependencies
 
-    while getopts ":vVhfr" opts; do
+    while getopts ":vVhfrn" opts; do
 	case "$opts" in
 	    h)
 		show_help
@@ -131,6 +149,10 @@ main() {
 		FORCE=1
 		RM_OPTS+=(-f)
 		SHRED_OPTS+=(-f)
+		;;
+
+	    n)
+		DRY_RUN=1
 		;;
 
 	    *)
